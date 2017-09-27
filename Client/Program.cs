@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Threading;
 
 namespace Client
 {
@@ -10,12 +11,19 @@ namespace Client
             var first = await client.AddAsync(10, 20);
             var second = await client.AddAsync(30, 40);
 
-            for (int i = 0; i < 1000; i++)
+            for (int i = 0; i < 10000; i++)
             {
-                var result = await client.AddAsync(i, 1);
+                Thread t;
 
-                Console.WriteLine($"adding {i} and {1} results {result}");
+                var i1 = i;
+                t = new Thread((async () =>
+                {
+                    var result = await client.AddAsync(i1, 1);
+                    Console.WriteLine($"adding {i1} and {1} results {result}");
+                }));
                 
+                t.Start();
+                t.Join();
             }
 
             Console.WriteLine ($"first {first} second {second}");  // Needs to print: first
