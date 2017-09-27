@@ -5,17 +5,17 @@ using System.Text;
 using System.Threading;
 using System.Collections;
 
-namespace addserver
+namespace AddServer
 {
 
-    class Calculator
+    public class Calculator
     {
         public static Int32 Add(Int32 op1, Int32 op2)
         {
             return op1 + op2;
         }
     }
-    class Program
+    class AddServer
     {
 
         static void Main(string[] args)
@@ -38,6 +38,9 @@ namespace addserver
 
             while (true)
             {
+ 
+ 
+ 
                 System.Console.WriteLine("Waiting for connection");
 
                 Socket connectionHandler = listener.Accept();
@@ -97,5 +100,4 @@ namespace addserver
             }
         }
     }
-}
 }
