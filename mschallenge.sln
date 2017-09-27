@@ -3,9 +3,9 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio 15
 VisualStudioVersion = 15.0.26124.0
 MinimumVisualStudioVersion = 15.0.26124.0
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AddServer", "AddServer\AddServer.csproj", "{B200B112-4150-40FD-B7B6-2FAAF9261126}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Server", "Server\Server.csproj", "{B200B112-4150-40FD-B7B6-2FAAF9261126}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AddServer.Test", "AddServer.Test\AddServer.Test.csproj", "{32CC5F69-3B53-4FCB-BEC3-4BE6B84E1B23}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Server.Test", "Server.Test\Server.Test.csproj", "{32CC5F69-3B53-4FCB-BEC3-4BE6B84E1B23}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
