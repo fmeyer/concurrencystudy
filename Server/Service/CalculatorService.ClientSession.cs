@@ -35,11 +35,11 @@ namespace Server.Service
             
             public void ProcessMessage(string message)
             {
-                var data = 0;
+                Logger.Info($"client:{ClientId} message:{message}");
 
                 try
                 {
-                    data = int.Parse(message);
+                    var data = int.Parse(message);
                     _intBuffer.Push(data);
                     PerformCommand(); // FIXME: Still doesn't support pipelining
                 }
@@ -60,8 +60,10 @@ namespace Server.Service
 
                 var op1 = _intBuffer.Pop();
                 var op2 = _intBuffer.Pop();
+                var result = Calculator.Add(op1, op2);
 
-                Notify($"{Calculator.Add(op1, op2)}\n");
+                Logger.Info($"ADD {op1} {op2} client:{ClientId} result:{result}");
+                Notify($"{result}\n");
             }
 
 
@@ -70,8 +72,15 @@ namespace Server.Service
                 // Convert the string data to byte data using ASCII encoding.  
                 var byteData = Encoding.ASCII.GetBytes(message);
 
-                // Begin sending the data to the remote device.  
-                WorkSocket.BeginSend(byteData, 0, byteData.Length, 0, SendCallback, WorkSocket);             
+                try
+                {
+                    // Begin sending the data to the remote device.  
+                    WorkSocket.BeginSend(byteData, 0, byteData.Length, 0, SendCallback, WorkSocket);
+                }
+                catch (SocketException e)
+                {
+                    Logger.Error(e.ToString());
+                }
             }
             
             private void SendCallback(IAsyncResult ar)
@@ -84,7 +93,11 @@ namespace Server.Service
                     // Complete sending the data to the remote device.  
                     var bytesSent = handler.EndSend(ar);
                     Logger.Info($"Sent {bytesSent} bytes to client: {ClientId}");
-                }
+                } 
+                // catch (SocketException e) 
+                // {
+
+                // }
                 catch (Exception e)
                 {
                     Logger.Error(e.ToString());

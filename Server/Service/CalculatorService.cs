@@ -84,24 +84,41 @@ namespace Server.Service
             var client = (ClientSession)ar.AsyncState;
             var handler = client.WorkSocket;
 
-            // Read data from the client socket.   
-            var bytesRead = handler.EndReceive(ar);
-
-            if (bytesRead <= 0) return;
-            
-            var message = Encoding.ASCII.GetString(client.Buffer, 0, bytesRead);
-
-            //  Graceful client shutdown request
-            if (message.IndexOf("done", StringComparison.Ordinal) > -1 )
+            try
             {
-                client.Shutdown();
-                _clients.Remove(client);
-                Logger.Info($"Client ID: {client.ClientId} disconnected");
+                // Read data from the client socket.   
+                var bytesRead = handler.EndReceive(ar);
+
+                if (bytesRead <= 0) return;
+
+
+                var s = Encoding.ASCII.GetString(client.Buffer, 0, bytesRead).Replace("\r", ""); // Telnet sends \r\n 
+                var messages = s.Split("\n", StringSplitOptions.RemoveEmptyEntries);
+
+                var list = new List<string>();
+                list.AddRange(messages);
+
+                foreach (var message in messages)
+                {
+                    
+                    //  Graceful client shutdown request
+                    if (message.IndexOf("done", StringComparison.Ordinal) > -1)
+                    {
+                        client.Shutdown();
+                        _clients.Remove(client);
+                        Logger.Info($"Client ID: {client.ClientId} disconnected");
+                    }
+                    else
+                    {
+                        client.ProcessMessage(message);
+                        handler.BeginReceive(client.Buffer, 0, ClientSession.BufferSize, 0, ReadCallback, client);
+                    }
+                }                
             }
-            else
+            catch (SocketException e)
             {
-                client.ProcessMessage(message);
-                handler.BeginReceive(client.Buffer, 0, ClientSession.BufferSize, 0, ReadCallback, client);
+                _clients.Remove(client); // removing clients
+                Logger.Error(e.ToString());
             }
         }
     }
