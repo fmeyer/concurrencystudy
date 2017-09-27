@@ -33,8 +33,7 @@ namespace Client
                 Monitor.PulseAll(_locker);
             }
         }
-        
-
+     
         private void Consume()
         {
             while (true)

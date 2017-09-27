@@ -81,10 +81,10 @@ namespace Client
                 
                 Receive(_client);
             });
-            
+
             processDone.WaitOne();
             
-            // Receive the response from the remote device.            
+            // Receive the response from the remote device.      
             var r = int.Parse(_results.Dequeue());
             return await Task.FromResult(r);
         }
