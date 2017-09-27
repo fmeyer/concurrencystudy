@@ -1,11 +1,10 @@
 ﻿using System;
 using System.Net;
-using AddServer.Server;
-
+using Server.Service; 
 
 /* For brevety I'm creating a logger class, which in a real project should be delecated 
 to an external library - For now it makes the code more readeable*/
-internal class Logger
+internal static class Logger
 {
     public static void Info(string message)
     {
@@ -20,9 +19,9 @@ internal class Logger
 
 namespace Server
 {
-    internal class App
+    internal static class App
     {
-        private static void Main(string[] args)
+        private static void Main()
         {
             new CalculatorService(IPAddress.Any, 1233).Listen();
         }

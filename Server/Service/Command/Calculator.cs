@@ -1,4 +1,4 @@
-namespace AddServer.Server.Command
+namespace Server.Service.Command
 {
     public class Calculator
     {

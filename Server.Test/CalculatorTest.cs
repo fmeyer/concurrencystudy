@@ -1,13 +1,13 @@
 using Xunit;
 
-namespace AddServer.Test
+namespace Server.Test
 {
     public class CalculatorTest
     {
         [Fact]
         public void TestAddingSingleNumbers()
         {
-            Assert.True(Server.Command.Calculator.Add(1, 2) == 3, "Should be equal to 3");
+            Assert.True(Service.Command.Calculator.Add(1, 2) == 3, "Should be equal to 3");
         }
 
         [Fact]
@@ -15,7 +15,7 @@ namespace AddServer.Test
         {
             const int op1 = int.MaxValue;
             
-            Assert.Equal(unchecked(op1 + op1), Server.Command.Calculator.Add(op1, op1));
+            Assert.Equal(unchecked(op1 + op1), Service.Command.Calculator.Add(op1, op1));
         }
 
         [Fact]
@@ -24,7 +24,7 @@ namespace AddServer.Test
             const int op1 = int.MaxValue; 
             const int op2 = int.MinValue;
 
-            Assert.Equal(-1, Server.Command.Calculator.Add(op1, op2));
+            Assert.Equal(-1, Service.Command.Calculator.Add(op1, op2));
         }
     }
 }

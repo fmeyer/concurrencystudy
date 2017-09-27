@@ -1,23 +1,23 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Net.Sockets;
-using System.Runtime.CompilerServices;
 using System.Text;
-using AddServer.Server.Command;
 
-namespace AddServer.Server
+using Server.Service.Command;
+
+namespace Server.Service
 {
     public partial class CalculatorService
     {
-        public class ClientSession
+        private class ClientSession
         {
-            public int ClientId;
+            public readonly int ClientId;
             // Client  socket.  
-            public Socket WorkSocket;
+            public readonly Socket WorkSocket;
             // Size of receive buffer.  
             public const int BufferSize = 32;
             // Receive buffer.  
-            public byte[] Buffer = new byte[BufferSize];
+            public readonly byte[] Buffer = new byte[BufferSize];
 
             private readonly Stack<int> _intBuffer = new Stack<int>();
 

@@ -1,6 +1,6 @@
 ﻿using Xunit;
 
-namespace AddServer.Test
+namespace Server.Test
 {
     public class ClientSessionTest
     {

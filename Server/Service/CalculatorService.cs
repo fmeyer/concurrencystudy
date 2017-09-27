@@ -5,7 +5,7 @@ using System.Net.Sockets;
 using System.Text;
 using System.Threading;
 
-namespace AddServer.Server
+namespace Server.Service
 {
     public partial class CalculatorService
     {
@@ -92,7 +92,7 @@ namespace AddServer.Server
             var message = Encoding.ASCII.GetString(client.Buffer, 0, bytesRead);
 
             //  Graceful client shutdown request
-            if (message.IndexOf("done") > -1 )
+            if (message.IndexOf("done", StringComparison.Ordinal) > -1 )
             {
                 client.Shutdown();
                 _clients.Remove(client);
