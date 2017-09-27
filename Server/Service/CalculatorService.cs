@@ -12,11 +12,9 @@ namespace Server.Service
         private readonly IPAddress _ipAddress;
         private readonly int _port;
         private readonly IPEndPoint _localEndPoint;
-        public static ManualResetEvent Mre = new ManualResetEvent(false);
+        private static readonly ManualResetEvent Mre = new ManualResetEvent(false);
 
-        private Socket _listener;
-
-        private const int MaxClients = 100;
+        private TcpListener _listener;
 
         private readonly List<ClientSession> _clients = new List<ClientSession>();
 
@@ -31,30 +29,22 @@ namespace Server.Service
         public void Listen()
         {
             Logger.Info($"Server starting at {_ipAddress}:{_port}");
-            
-            _listener = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
-            try
-            {
-                _listener.Bind(_localEndPoint);
-                _listener.Listen(MaxClients);
 
-                while (true)
-                {
-                    // Blocking threads  
-                    Mre.Reset();
+            _listener = new TcpListener(_localEndPoint);
+            _listener.Start();
 
-                    Console.WriteLine("Waiting for a connection...");
+            while (true)
+            {                
+                // Blocking threads  
+                Mre.Reset();
 
-                    // Start an asynchronous socket to listen for connections.
-                    _listener.BeginAccept(AcceptCallback, _listener);
+                Console.WriteLine("Waiting for a connection...");
 
-                    // Block and wait until a connection is established.  
-                    Mre.WaitOne();
-                }
-            }
-            catch (Exception e)
-            {
-                Logger.Error(e.ToString());
+                // Start an asynchronous socket to listen for connections.
+                _listener.BeginAcceptSocket(AcceptCallback, _listener);
+
+                // Block and wait until a connection is established.  
+                Mre.WaitOne();
             }
         }
 
@@ -66,8 +56,8 @@ namespace Server.Service
             Mre.Set();
 
             // Get the socket that handles the client request.
-            _listener = (Socket)ar.AsyncState;
-            var handler = _listener.EndAccept(ar);
+            _listener = (TcpListener) ar.AsyncState;
+            var handler = _listener.EndAcceptSocket(ar);
 
             // Create the state object.  
             var client = new ClientSession(_clients.Count, handler);
