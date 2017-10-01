@@ -8,13 +8,14 @@ namespace Client
 
         Thread[] _workers = new Thread[Program.MaxThreads];
 
-        public static readonly int MaxThreads = 10;
+        public static readonly int MaxThreads = 100;
         private async void RequestAsync()
         {
             var client = new AddClient("localhost:1233");
             var first = await client.AddAsync(10, 20);
             var second = await client.AddAsync(30, 40);
 
+            // create max threads with random sleep to test out of order request
             for (int i = 0; i < Program.MaxThreads; i++)
             {
                 var i1 = i;
@@ -29,6 +30,7 @@ namespace Client
 
             Console.WriteLine ($"first {first} second {second}");  // Needs to print: first
 
+            // wait for all requests to finish
             foreach (var worker in _workers) worker.Join();
             
             client.Close();

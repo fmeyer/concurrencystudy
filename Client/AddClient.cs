@@ -74,7 +74,8 @@ namespace Client
         {
             var request = new SumRequest(p0, p1);
 
-            _requests.Enqueue(request); 
+            // I don't think this is necessary for now
+            // _requests.Enqueue(request); 
 
             processDone.Reset();
 
@@ -94,7 +95,7 @@ namespace Client
 
         public void Close()
         {
-
+            Disconnect();
         }
 
         ~AddClient()
