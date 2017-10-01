@@ -19,7 +19,7 @@ namespace Client
 
                 var result = Encoding.ASCII.GetString(state.Buffer, 0, bytesRead);
                 
-                _results.Enqueue(result);
+                _responses.Enqueue(result);
 
                 // signal workers;
                 processDone.Set();

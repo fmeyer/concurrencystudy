@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Collections.Concurrent;
 using System.Net;
 using System.Net.Sockets;
 using System.Text;
@@ -16,8 +17,12 @@ namespace Client
         private static readonly ManualResetEvent connectDone = new ManualResetEvent(false);
         private static readonly ManualResetEvent sendDone = new ManualResetEvent(false);
 
-        private readonly AddRequestQueue _requests;
-        private readonly Queue<string> _results;
+
+        private readonly object _locker = new object();
+
+
+        private readonly ConcurrentQueue<SumRequest> _requests;
+        private readonly ConcurrentQueue<string> _responses;
 
         private readonly Socket _client; 
 
@@ -29,16 +34,14 @@ namespace Client
             var remoteEP = new IPEndPoint(IPAddress.Any, int.Parse(strings[1]));
 
             // Create a TCP/IP socket.  
-            _client = new Socket(AddressFamily.InterNetwork,
-                SocketType.Stream, ProtocolType.Tcp);
+            _client = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
 
             // Connect to the remote endpoint.  
             _client.BeginConnect(remoteEP, ConnectCallback, _client);
             connectDone.WaitOne();
 
-
-            _requests = new AddRequestQueue(10); // 10 workers
-            _results = new Queue<string>();
+            _responses = new ConcurrentQueue<string>();
+            _requests = new ConcurrentQueue<SumRequest>();
         }
 
         private void Receive(Socket client)
@@ -71,27 +74,27 @@ namespace Client
         {
             var request = new SumRequest(p0, p1);
 
+            _requests.Enqueue(request); 
+
             processDone.Reset();
 
-            _requests.Enqueue(() =>
-            {
-                // Send test data to the remote device.  
-                Send(_client, request.ToString());
-                sendDone.WaitOne();
-                
-                Receive(_client);
-            });
-
+            // Send test data to the remote device.  
+            Send(_client, request.ToString());
+            sendDone.WaitOne();
+            Receive(_client);
             processDone.WaitOne();
-            
+
+            var response = "";
+            _responses.TryDequeue(out response);
+
             // Receive the response from the remote device.      
-            var r = int.Parse(_results.Dequeue());
+            var r = int.Parse(response);
             return await Task.FromResult(r);
         }
 
         public void Close()
         {
-            _requests.Dispose();
+
         }
 
         ~AddClient()

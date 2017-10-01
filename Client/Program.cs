@@ -5,28 +5,31 @@ namespace Client
 {
     class Program
     {
+
+        Thread[] _workers = new Thread[Program.MaxThreads];
+
+        public static readonly int MaxThreads = 10;
         private async void RequestAsync()
         {
             var client = new AddClient("localhost:1233");
             var first = await client.AddAsync(10, 20);
             var second = await client.AddAsync(30, 40);
 
-            for (int i = 0; i < 10000; i++)
+            for (int i = 0; i < Program.MaxThreads; i++)
             {
-                Thread t;
-
                 var i1 = i;
-                t = new Thread((async () =>
+
+                (_workers[i] = new Thread((async () =>
                 {
+                    Thread.Sleep(new Random().Next(200));
                     var result = await client.AddAsync(i1, 1);
                     Console.WriteLine($"adding {i1} and {1} results {result}");
-                }));
-                
-                t.Start();
-                t.Join();
+                }))).Start();
             }
 
             Console.WriteLine ($"first {first} second {second}");  // Needs to print: first
+
+            foreach (var worker in _workers) worker.Join();
             
             client.Close();
         }
