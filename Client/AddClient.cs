@@ -24,12 +24,11 @@ namespace Client
 
         private readonly Socket _client; 
 
-        public AddClient(string localhost)
+        public AddClient(IPAddress iP, int port)
         {
-            var strings = localhost.Split(":");
 
             // var ipHostInfo = Dns.Resolve(strings[0]);
-            var remoteEP = new IPEndPoint(IPAddress.Any, int.Parse(strings[1]));
+            var remoteEP = new IPEndPoint(iP, port);
 
             // Create a TCP/IP socket.  
             _client = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
@@ -76,17 +75,20 @@ namespace Client
             return await Task.FromResult(result);
         }
 
-        public void Close()
-        {
-//           Send(_client, "done");
+        public void Dispose(){
+            Close();
+        }
+
+        public void Close() {
+            Disconnect();
         }
 
         private void Disconnect()
         {
-                        
+
             // Release the socket.  
-            SendAsync(_client, "done");
-            ReceiveAsync(_client);
+            Send("done");
+            Receive();
             _client.Close();
 
             Console.WriteLine("Disconnect from server");

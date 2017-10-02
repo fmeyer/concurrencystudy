@@ -79,11 +79,6 @@ namespace Client
                     _responses.Enqueue(message);
                 }
                 processDone.Set(); // notify the waiting threads only if all responses arrived
-
-                // if (received == sent) {
-                // } else { 
-                //     client.BeginReceive(state.Buffer, 0, ResultBuffer.BufferSize, 0, ReceiveCallback, state);
-                // }
             }
             catch (Exception e)
             {
