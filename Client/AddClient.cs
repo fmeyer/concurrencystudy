@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Collections.Concurrent;
 using System.Net;
 using System.Net.Sockets;
 using System.Text;
@@ -12,113 +13,85 @@ namespace Client
     {
         // ManualResetEvent instances signal completion.  
         
-        private static readonly ManualResetEvent processDone = new ManualResetEvent(false);
-        private static readonly ManualResetEvent connectDone = new ManualResetEvent(false);
-        private static readonly ManualResetEvent sendDone = new ManualResetEvent(false);
+        private static readonly ManualResetEvent ProcessDone = new ManualResetEvent(false);
+        private static readonly ManualResetEvent ConnectDone = new ManualResetEvent(false);
+        private static readonly ManualResetEvent SendDone = new ManualResetEvent(false);
 
-        private readonly AddRequestQueue _requests;
-        private readonly Queue<string> _results;
+        // A thread-safe FIFO which receives in order the server responses
+        private readonly ConcurrentQueue<string> _responses;
+
 
         private readonly Socket _client; 
 
-        public AddClient(string localhost)
+        public AddClient(IPAddress iP, int port)
         {
-            var strings = localhost.Split(":");
 
-            // var ipHostInfo = Dns.Resolve(strings[0]);
-            var remoteEP = new IPEndPoint(IPAddress.Any, int.Parse(strings[1]));
+            var remoteEp = new IPEndPoint(iP, port);
 
             // Create a TCP/IP socket.  
-            _client = new Socket(AddressFamily.InterNetwork,
-                SocketType.Stream, ProtocolType.Tcp);
+            _client = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
 
             // Connect to the remote endpoint.  
-            _client.BeginConnect(remoteEP, ConnectCallback, _client);
-            connectDone.WaitOne();
+            _client.BeginConnect(remoteEp, ConnectCallback, _client);
+            ConnectDone.WaitOne();
 
-
-            _requests = new AddRequestQueue(10); // 10 workers
-            _results = new Queue<string>();
+            _responses = new ConcurrentQueue<string>();
         }
-
-        private void Receive(Socket client)
-        {
-            var state = new ResultBuffer();
-            
-            try
-            {
-                // Create the state object.  
-                state.ClientSocket = client;
-
-                // Begin receiving the data from the remote device.  
-                client.BeginReceive(state.Buffer, 0, ResultBuffer.BufferSize, 0, ReceiveCallback, state);
-            }
-            catch (Exception e)
-            {
-                Console.WriteLine(e.ToString());
-            }
-        }
-
-        private void Send(Socket client, string data)
-        {
-  
-            var byteData = Encoding.ASCII.GetBytes(data);
-
-            client.BeginSend(byteData, 0, byteData.Length, 0, SendCallback, client);
-        }
-
-        public async Task<int> AddAsync(int p0, int p1)
+        
+        /**
+         * Syncronous method
+         */
+        public int Add(int p0, int p1)
         {
             var request = new SumRequest(p0, p1);
-
-            processDone.Reset();
-
-            _requests.Enqueue(() =>
-            {
-                // Send test data to the remote device.  
-                Send(_client, request.ToString());
-                sendDone.WaitOne();
-                
-                Receive(_client);
-            });
-
-            processDone.WaitOne();
             
+            Send(request.ToString());
+            return int.Parse(Receive());
+        }
+
+        /**
+         * Assyncronous method
+         */
+        public async Task<int> AddAsync(int p0, int p1)
+        {
+
+            var request = new SumRequest(p0, p1);
+
+            ProcessDone.Reset();
+
+            // Send test data to the remote device.  
+            SendAsync(_client, request.ToString());
+
+            // TODO: split send and receive
+            ReceiveAsync(_client);
+            ProcessDone.WaitOne();
+
+            _responses.TryDequeue(out var response);
+            
+
             // Receive the response from the remote device.      
-            var r = int.Parse(_results.Dequeue());
-            return await Task.FromResult(r);
+            var r = int.Parse(response);
+
+            return await Task.FromResult(r); // wrapping response into an Task to enable the await keyword
         }
 
-        public void Close()
-        {
-            _requests.Dispose();
+        public void Dispose(){
+            Close();
         }
 
-        ~AddClient()
-        {
+        public void Close() {
             Disconnect();
         }
 
         private void Disconnect()
         {
-                        
+
             // Release the socket.  
-            _client.Shutdown(SocketShutdown.Both);
+            Send("done");
+            Receive();
             _client.Close();
 
             Console.WriteLine("Disconnect from server");
-        }
-
-        private class ResultBuffer
-        {
-            // Size of receive buffer.  
-            public const int BufferSize = 1024;
-
-            // Receive buffer.  
-            public readonly byte[] Buffer = new byte[BufferSize];
-
-            // Client socket.  
-            public Socket ClientSocket;
         }
     }
 }
