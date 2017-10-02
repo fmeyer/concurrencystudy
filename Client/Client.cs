@@ -4,12 +4,9 @@ using System.Threading;
 
 namespace Client
 {
-    class Program
+    class Client
     {
 
-        Thread[] _workers = new Thread[MaxThreads];
-
-        public static readonly int MaxThreads = 10;
         private async void RequestAsync()
         {
             var client = new AddClient(IPAddress.Any, 1133);
@@ -22,7 +19,7 @@ namespace Client
         static void Main(string[] args)
         {
             Console.WriteLine("Hello World!");
-            new Program().RequestAsync();
+            new Client().RequestAsync();
         }
     }
 }

@@ -9,19 +9,18 @@ namespace Client
     {
         
         
+        /* Receive sync data from socket  */
         private string Receive()
         {
             ResultBuffer r = new ResultBuffer();
             var bytesRead = _client.Receive(r.Buffer, 0, ResultBuffer.BufferSize, SocketFlags.None);
-            var result = Encoding.ASCII.GetString(r.Buffer, 0, bytesRead);
-            return result;
+            return DecodeResult(r, bytesRead);
         }
 
         private void Send(string request)
         {
             _client.Send(Encoding.ASCII.GetBytes(request));
         }
-        
         
         private void ReceiveAsync(Socket client)
         {
@@ -56,33 +55,44 @@ namespace Client
             {
                 var state = (ResultBuffer) ar.AsyncState;
                 var client = state.ClientSocket;
-
-  
                 var bytesRead = client.EndReceive(ar);
 
+                // If we've reached the callback without receiving data, we should retry
+                // the receive callback.
                 if (bytesRead <= 0)
                 {
                     client.BeginReceive(state.Buffer, 0, ResultBuffer.BufferSize, 0, ReceiveCallback, state);
                 }
 
-                var result = Encoding.ASCII.GetString(state.Buffer, 0, bytesRead);
+                var result = DecodeResult(state, bytesRead);
 
-                // receive pipelined responses
-                var messages = result.Split("\n", StringSplitOptions.RemoveEmptyEntries);
-
-                var list = new List<string>();
-
-                list.AddRange(messages);
-
-                foreach (var message in messages)
-                {
-                    _responses.Enqueue(message);
-                }
-                processDone.Set(); // notify the waiting threads only if all responses arrived
+                ParseResults(result);
+             
+                /*  
+                    FIXME: Still causing a race condition when two or more threads are waiting for the message.
+                    Ideally, I'd notify only the receiver, but I still can't garantee the receiver without 
+                    implementing sequence into the the socket protocol.
+                 */
+                ProcessDone.Set(); // releases all threads 
             }
             catch (Exception e)
             {
                 Console.WriteLine(e.ToString());
+            }
+        }
+
+        private void ParseResults(string result)
+        { 
+            // split pipelined responses
+            var messages = result.Split("\n", StringSplitOptions.RemoveEmptyEntries);
+
+            var list = new List<string>();
+
+            list.AddRange(messages);
+
+            foreach (var message in messages)
+            {
+                _responses.Enqueue(message);
             }
         }
 
@@ -92,13 +102,12 @@ namespace Client
             {  
                 var client = (Socket) ar.AsyncState;
 
-
                 client.EndConnect(ar);
 
                 Console.WriteLine("Socket connected to {0}", client.RemoteEndPoint.ToString());
   
-                // signal 
-                connectDone.Set();
+                // event connection successfull
+                ConnectDone.Set();
             }
             catch (Exception e)
             {
@@ -113,15 +122,13 @@ namespace Client
                 var client = (Socket) ar.AsyncState;
                 var bytesSent = client.EndSend(ar);
   
-                sendDone.Set();
+                SendDone.Set();
             }
             catch (Exception e)
             {
                 Console.WriteLine(e.ToString());
             }
         }
-        
-        
         
         private class ResultBuffer
         {
@@ -134,5 +141,11 @@ namespace Client
             // Client socket.  
             public Socket ClientSocket;
         }
+        
+        private static string DecodeResult(ResultBuffer r, int bytesRead)
+        {
+            return Encoding.ASCII.GetString(r.Buffer, 0, bytesRead);
+        }
+
     }
 }
