@@ -67,6 +67,7 @@ namespace Client
             ProcessDone.WaitOne();
 
             _responses.TryDequeue(out var response);
+            
 
             // Receive the response from the remote device.      
             var r = int.Parse(response);
