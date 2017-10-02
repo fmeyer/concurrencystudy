@@ -16,7 +16,7 @@
 
             public override string ToString()
             {
-                return $"{_op1}\n{_op2}";
+                return $"{_op1}\n{_op2}\n"; // need to send two 
             }
 
             public SumRequest(int op1 = 0, int op2 = 0)

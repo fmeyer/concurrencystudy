@@ -35,7 +35,7 @@ namespace Server.Service
             
             public void ProcessMessage(string message)
             {
-                Logger.Info($"client:{ClientId} message:{message}");
+                // Logger.Info($"client:{ClientId} message:{message}");
 
                 try
                 {
@@ -56,13 +56,13 @@ namespace Server.Service
             private void PerformCommand()
             {
                 
-                if ((_intBuffer.Count <= 0) || (_intBuffer.Count % 2 != 0)) return;
+                if ((_intBuffer.Count == 0) || (_intBuffer.Count % 2 != 0)) return;
 
                 var op1 = _intBuffer.Pop();
                 var op2 = _intBuffer.Pop();
                 var result = Calculator.Add(op1, op2);
 
-                Logger.Info($"ADD {op1} {op2} client:{ClientId} result:{result}");
+                Logger.Info($"C:{ClientId} >> ADD {op1} {op2} = {result}");
                 Notify($"{result}\n");
             }
 
@@ -92,7 +92,7 @@ namespace Server.Service
 
                     // Complete sending the data to the remote device.  
                     var bytesSent = handler.EndSend(ar);
-                    Logger.Info($"Sent {bytesSent} bytes to client: {ClientId}");
+                     Logger.Info($"Sent {bytesSent} bytes to client: {ClientId}");
                 } 
                 // catch (SocketException e) 
                 // {

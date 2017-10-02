@@ -107,7 +107,7 @@ namespace Server.Service
             }
             catch (SocketException e)
             {
-                _clients.Remove(client); // removing clients
+                 _clients.Remove(client); // removing clients
                 Logger.Error(e.ToString());
             }
         }

@@ -18,11 +18,9 @@ namespace Client
         private static readonly ManualResetEvent sendDone = new ManualResetEvent(false);
 
 
-        private readonly object _locker = new object();
-
-
         private readonly ConcurrentQueue<SumRequest> _requests;
         private readonly ConcurrentQueue<string> _responses;
+
 
         private readonly Socket _client; 
 
@@ -42,87 +40,56 @@ namespace Client
 
             _responses = new ConcurrentQueue<string>();
             _requests = new ConcurrentQueue<SumRequest>();
-        }
-
-        private void Receive(Socket client)
-        {
-            var state = new ResultBuffer();
             
-            try
-            {
-                // Create the state object.  
-                state.ClientSocket = client;
-
-                // Begin receiving the data from the remote device.  
-                client.BeginReceive(state.Buffer, 0, ResultBuffer.BufferSize, 0, ReceiveCallback, state);
-            }
-            catch (Exception e)
-            {
-                Console.WriteLine(e.ToString());
-            }
         }
 
-        private void Send(Socket client, string data)
-        {
-  
-            var byteData = Encoding.ASCII.GetBytes(data);
-
-            client.BeginSend(byteData, 0, byteData.Length, 0, SendCallback, client);
-        }
-
-        public async Task<int> AddAsync(int p0, int p1)
+        
+        /**
+         * Syncronous method
+         */
+        public int Add(int p0, int p1)
         {
             var request = new SumRequest(p0, p1);
+            
+            Send(request.ToString());
+            return int.Parse(Receive());
+        }
 
-            // I don't think this is necessary for now
-            // _requests.Enqueue(request); 
 
-            processDone.Reset();
 
-            // Send test data to the remote device.  
-            Send(_client, request.ToString());
-            sendDone.WaitOne();
-            Receive(_client);
-            processDone.WaitOne();
+        /**
+         * Assyncronous method
+         */
+        public async Task<int> AddAsync(int p0, int p1)
+        {
+            var result = 0;
+            
+            var thread = new Thread(start: (async () =>
+            {
+                result = Add(p0, p1);
+            }));
+            
+            thread.Start();
 
-            var response = "";
-            _responses.TryDequeue(out response);
+            thread.Join();
 
-            // Receive the response from the remote device.      
-            var r = int.Parse(response);
-            return await Task.FromResult(r);
+            return await Task.FromResult(result);
         }
 
         public void Close()
         {
-            Disconnect();
-        }
-
-        ~AddClient()
-        {
-            Disconnect();
+//           Send(_client, "done");
         }
 
         private void Disconnect()
         {
                         
             // Release the socket.  
-            _client.Shutdown(SocketShutdown.Both);
+            SendAsync(_client, "done");
+            ReceiveAsync(_client);
             _client.Close();
 
             Console.WriteLine("Disconnect from server");
-        }
-
-        private class ResultBuffer
-        {
-            // Size of receive buffer.  
-            public const int BufferSize = 1024;
-
-            // Receive buffer.  
-            public readonly byte[] Buffer = new byte[BufferSize];
-
-            // Client socket.  
-            public Socket ClientSocket;
         }
     }
 }
